@@ -6,3 +6,9 @@
 /.idea/markdown-navigator.xml
 /.idea/modules.xml
 /.idea/vcs.xml
+/Untitled
+/models/multi_cased_L-12_H-768_A-12/bert_config.json
+/models/multi_cased_L-12_H-768_A-12/bert_model.ckpt.data-00000-of-00001
+/models/multi_cased_L-12_H-768_A-12/bert_model.ckpt.index
+/models/multi_cased_L-12_H-768_A-12/bert_model.ckpt.meta
+/models/multi_cased_L-12_H-768_A-12/vocab.txt
