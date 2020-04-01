@@ -21,6 +21,7 @@ def create_tokenizer():
 
 
 data_dir = 'data'
+max_seq_length = 48
 
 
 def preprocess_data(tokenizer):
@@ -34,6 +35,7 @@ def preprocess_data(tokenizer):
     test_set = []
     test_labels = []
 
+    # TODO: maybe use Pandas?
     with open(filename, encoding='utf-8') as csvFile:
         csv_reader = csv.reader(csvFile, delimiter=";")
         line_count = 0
@@ -43,14 +45,16 @@ def preprocess_data(tokenizer):
             line_count +=1
     csvFile.close()
 
-    with open(test_filename, encoding='utf-8') as csvFileTest:
-        csv_reader_test = csv.reader(csvFileTest, delimiter=";")
-        line_count = 0
-        for row in csv_reader_test:
-            if line_count > 0:
-                data_test.append(row)
-            line_count +=1
-    csvFileTest.close()
+    # TODO: maybe use Pandas?
+    # TODO: make separate validation set
+    # with open(test_filename, encoding='utf-8') as csvFileTest:
+    #     csv_reader_test = csv.reader(csvFileTest, delimiter=";")
+    #     line_count = 0
+    #     for row in csv_reader_test:
+    #         if line_count > 0:
+    #             data_test.append(row)
+    #         line_count +=1
+    # csvFileTest.close()
 
     shuffled_set = random.sample(data, len(data))
     training_set = shuffled_set[0:]
@@ -60,7 +64,8 @@ def preprocess_data(tokenizer):
     for el in training_set:
         train_set.append(el[1])
         zeros = [0] * classes
-        zeros[int(el[0]) - 1] = 1
+        class_number = el[0]
+        zeros[int(class_number) - 1] = 1 # onehote encode TODO: use existin onhoteencode method
         train_labels.append(zeros)
 
     for el in testing_set:
@@ -91,6 +96,67 @@ def preprocess_data(tokenizer):
     return train_token_ids, train_labels_final, test_token_ids, test_labels_final
 
 
+def create_bert_layer():
+    global bert_layer
+
+    bert_dir = os.path.join(modelBertDir, "multi_cased_L-12_H-768_A-12")
+
+    bert_params = bert.params_from_pretrained_ckpt(bert_dir)
+
+    bert_layer = bert.BertModelLayer.from_params(bert_params, name="bert")
+
+    # with adapter
+    bert_layer.apply_adapter_freeze()
+
+
+def load_bert_checkpoint():
+    models_folder = os.path.join(modelBertDir, "multi_cased_L-12_H-768_A-12")
+    checkpoint_name = os.path.join(models_folder, "bert_model.ckpt")
+
+    bert.load_stock_weights(bert_layer, checkpoint_name)
+
+#  Add dense layers after my BERT embedded layer with 256 neurons each.
+
+
+def createModel():
+    global model
+
+    model = tf.keras.Sequential([
+        tf.keras.layers.Input(shape=(max_seq_length,), dtype='int32', name='input_ids'),
+        bert_layer,
+        tf.keras.layers.Flatten(),
+        tf.keras.layers.Dense(256, activation=tf.nn.relu),
+        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(256, activation=tf.nn.relu),
+        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(classes, activation=tf.nn.softmax)
+    ])
+
+    model.build(input_shape=(None, max_seq_length))
+
+    model.compile(loss='categorical_crossentropy', optimizer=tf.optimizers.Adam(lr=0.00001), metrics=['accuracy'])
+
+    print(model.summary())
+
+
+def fitModel(training_set, training_label, testing_set, testing_label):
+    checkpoint_name = os.path.join(modelDir, "bert_faq.ckpt")
+
+    # Create a callback that saves the model's weights
+    cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_name,
+                                                     save_weights_only=True,
+                                                     verbose=1)
+
+    # callback = StopTrainingClassComplete()
+
+    history = model.fit(
+        training_set,
+        training_label,
+        epochs=300,
+        validation_data=(testing_set, testing_label),
+        verbose=1,
+        callbacks=[cp_callback]
+    )
 # create tokenizer using BERT mode vocab
 tokenizer = createTokenizer()
 
