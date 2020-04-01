@@ -3,16 +3,19 @@ import bert
 import os
 import csv
 import random
-
+import numpy as np
 # tf.test.gpu_device_name()
 from tensorflow.python.client import device_lib
-print(device_lib.list_local_devices())
+
+# print(device_lib.list_local_devices())
 print('BERT with Tensorflow 2.0')
 print(f'Tf version is: {tf.__version__}')
 
+current_dir = os.path.dirname(os.path.realpath(__file__))
+
 
 def create_tokenizer():
-    current_dir = os.path.dirname(os.path.realpath(__file__))
+
     models_folder = os.path.join(current_dir, "models", "multi_cased_L-12_H-768_A-12")
     vocab_file = os.path.join(models_folder, "vocab.txt")
 
@@ -22,11 +25,12 @@ def create_tokenizer():
 
 data_dir = 'data'
 max_seq_length = 48
+classes_number = 3
 
 
 def preprocess_data(tokenizer):
-    filename = os.path.join(data_dir, "data.csv")
-    test_filename = os.path.join(data_dir, "data_test.csv")
+    filename = os.path.join(current_dir, data_dir, "DEtest.csv")
+    test_filename = os.path.join(current_dir, data_dir, "data_test.csv")
 
     data = []
     data_test = []
@@ -38,11 +42,8 @@ def preprocess_data(tokenizer):
     # TODO: maybe use Pandas?
     with open(filename, encoding='utf-8') as csvFile:
         csv_reader = csv.reader(csvFile, delimiter=";")
-        line_count = 0
         for row in csv_reader:
-            if line_count > 0:
-                data.append(row)
-            line_count +=1
+            data.append(row)
     csvFile.close()
 
     # TODO: maybe use Pandas?
@@ -62,15 +63,15 @@ def preprocess_data(tokenizer):
     testing_set = shuffled_set_test[0:]
 
     for el in training_set:
-        train_set.append(el[1])
-        zeros = [0] * classes
-        class_number = el[0]
-        zeros[int(class_number) - 1] = 1 # onehote encode TODO: use existin onhoteencode method
+        train_set.append(el[2])
+        zeros = [0] * classes_number
+        class_number = el[1]
+        zeros[int(class_number) - 1] = 1  # onehote encode TODO: use existin onhoteencode method
         train_labels.append(zeros)
 
     for el in testing_set:
         test_set.append(el[1])
-        zeros = [0] * classes
+        zeros = [0] * classes_number
         zeros[int(el[0]) - 1] = 1
         test_labels.append(zeros)
 
@@ -115,6 +116,7 @@ def load_bert_checkpoint():
 
     bert.load_stock_weights(bert_layer, checkpoint_name)
 
+
 #  Add dense layers after my BERT embedded layer with 256 neurons each.
 
 
@@ -129,7 +131,7 @@ def createModel():
         tf.keras.layers.Dropout(0.5),
         tf.keras.layers.Dense(256, activation=tf.nn.relu),
         tf.keras.layers.Dropout(0.5),
-        tf.keras.layers.Dense(classes, activation=tf.nn.softmax)
+        tf.keras.layers.Dense(classes_number, activation=tf.nn.softmax)
     ])
 
     model.build(input_shape=(None, max_seq_length))
@@ -157,9 +159,11 @@ def fitModel(training_set, training_label, testing_set, testing_label):
         verbose=1,
         callbacks=[cp_callback]
     )
-# create tokenizer using BERT mode vocab
-tokenizer = createTokenizer()
 
+
+# create tokenizer using BERT mode vocab test
+tokenizer = create_tokenizer()
 # preprocess data (split/shuffle etc)
 train_set, train_labels, test_set, test_labels = preprocess_data(tokenizer)
-
+print('X:', train_set)
+print('Y:', train_labels)
