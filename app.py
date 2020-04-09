@@ -23,9 +23,9 @@ print(f'Tf version is: {tf.__version__}')
 current_dir = os.path.dirname(os.path.realpath(__file__))
 models_folder = os.path.join(current_dir, "models", "multi_cased_L-12_H-768_A-12")
 weights_path = os.path.join(current_dir, "weights", 'bert_model_weights.h5')
-EPOCHS = 1
+EPOCHS = 70
 data_dir = 'data'
-max_seq_length =
+max_seq_length = 47
 classes = ['MANAGEMENT', 'PAYBENEFITS', 'WORKPLACE']
 
 classes_number = len(classes)
@@ -169,8 +169,8 @@ def fitModel(training_set, training_label, testing_set, testing_label):
                                                      save_weights_only=True,
                                                      verbose=1)
 
-    logdir = os.path.join("drive/My Drive/logs", datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
-    tensorboard_callback = tf.keras.callbacks.TensorBoard(logdir, histogram_freq=1)
+    log_dir = "drive/My Drive/logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir, histogram_freq=1)
 
     history = model.fit(
         training_set,
@@ -231,18 +231,17 @@ res = model.predict(pred_token_ids)
 
 for text, pred in zip(pred_sentences, res):
     print(" Text:", text)
-    print(" Res:", type(pred))
+    print(" Res:", pred)
 
+    max_score_index = np.argmax(pred)
+    score = pred[max_score_index]
 
-max_score_index = np.argmax(pred)
-score = prediction[max_score_index]
+    # filter trough threshold
+    if threshold < score:
+        pred_class = classes[max_score_index]
+        print('Predicted class:', pred_class)
+    else:
+        print('Prediction is lower than threshold!!')
 
-# filter trough threshold
-if threshold < score:
-    pred_class = classes[max_score_index]
-    print('Predicted class:', pred_class)
-else:
-    logger.info('Prediction is lower than threshold')
-
-print('save model: ------------->>>>>')
+print('save model: -------------------------------------------->>>>>')
 model.save_weights(weights_path)
