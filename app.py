@@ -13,7 +13,7 @@ import datetime, os
 
 plt.style.use('classic')
 if not tf.__version__.startswith("2."):
-    raise Exception('Wrong TF version')
+    raise Exception('Wrong TF version!')
 
 # print(device_lib.list_local_devices())
 
@@ -22,10 +22,16 @@ print(f'Tf version is: {tf.__version__}')
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
 models_folder = os.path.join(current_dir, "models", "multi_cased_L-12_H-768_A-12")
-EPOCHS = 2
+weights_path = os.path.join(current_dir, "weights", 'bert_model_weights.h5')
+EPOCHS = 1
 data_dir = 'data'
-max_seq_length = 48
-classes_number = 3
+max_seq_length =
+classes = ['MANAGEMENT', 'PAYBENEFITS', 'WORKPLACE']
+
+classes_number = len(classes)
+checkpoint_name = os.path.join(models_folder,'checkpoints', "bert_faq.ckpt")
+threshold = 0.5
+
 
 
 def create_tokenizer():
@@ -128,7 +134,7 @@ def create_bert_layer():
 
 
 def load_bert_checkpoint():
-    checkpoint_name = os.path.join(models_folder, "bert_model.ckpt")
+    # checkpoint_name = os.path.join(models_folder, "bert_model.ckpt")
 
     bert.load_stock_weights(bert_layer, checkpoint_name)
 
@@ -156,14 +162,14 @@ def createModel():
 
 
 def fitModel(training_set, training_label, testing_set, testing_label):
-    checkpoint_name = os.path.join(models_folder, "bert_faq.ckpt")
+    checkpoint_name = os.path.join(models_folder,'checkpoints', "bert_faq.ckpt")
 
     # Create a callback that saves the model's weights
     cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_name,
                                                      save_weights_only=True,
                                                      verbose=1)
 
-    logdir = os.path.join("logs", datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+    logdir = os.path.join("drive/My Drive/logs", datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
     tensorboard_callback = tf.keras.callbacks.TensorBoard(logdir, histogram_freq=1)
 
     history = model.fit(
@@ -188,6 +194,8 @@ print('X:', train_set)
 print('Y:', train_labels)
 
 print('Create model')
+
+
 create_bert_layer()
 # load_bert_checkpoint()
 createModel()
@@ -210,8 +218,6 @@ plt.legend()
 
 plt.show()
 
-# Todo: save the model weights
-
 # model predict
 
 pred_sentences = [
@@ -219,10 +225,24 @@ pred_sentences = [
     "hoffe, das Management wird das Anreizsystem nicht weiter ändern",
     "netter Chef"
 ]
-
+# 3 class, 2 class 1class
 pred_token_ids = convert_text_into_tokens(tokenizer, pred_sentences)
 res = model.predict(pred_token_ids)
 
 for text, pred in zip(pred_sentences, res):
-    print(" text:", text)
-    print("  res:", pred)
+    print(" Text:", text)
+    print(" Res:", type(pred))
+
+
+max_score_index = np.argmax(pred)
+score = prediction[max_score_index]
+
+# filter trough threshold
+if threshold < score:
+    pred_class = classes[max_score_index]
+    print('Predicted class:', pred_class)
+else:
+    logger.info('Prediction is lower than threshold')
+
+print('save model: ------------->>>>>')
+model.save_weights(weights_path)
