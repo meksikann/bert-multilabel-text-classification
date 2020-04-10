@@ -23,7 +23,7 @@ print(f'Tf version is: {tf.__version__}')
 current_dir = os.path.dirname(os.path.realpath(__file__))
 models_folder = os.path.join(current_dir, "models", "multi_cased_L-12_H-768_A-12")
 weights_path = os.path.join(current_dir, "weights", 'bert_model_weights.h5')
-EPOCHS = 70
+EPOCHS = 200
 data_dir = 'data'
 max_seq_length = 47
 classes = ['MANAGEMENT', 'PAYBENEFITS', 'WORKPLACE']
@@ -162,15 +162,21 @@ def createModel():
 
 
 def fitModel(training_set, training_label, testing_set, testing_label):
-    checkpoint_name = os.path.join(models_folder,'checkpoints', "bert_faq.ckpt")
+    file_name="weights-improvement-{epoch:02d}-{val_accuracy:.2f}.ckpt"
+    filepath = os.path.join(models_folder, 'checkpoints', file_name)
 
     # Create a callback that saves the model's weights
-    cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_name,
+    cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=filepath,
                                                      save_weights_only=True,
+                                                     save_best_only=True,
+                                                     monitor='val_loss',
+                                                     mode='auto',
                                                      verbose=1)
 
-    log_dir = "drive/My Drive/logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir, histogram_freq=1)
+
+    es = tf.keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=30)
 
     history = model.fit(
         training_set,
@@ -178,7 +184,7 @@ def fitModel(training_set, training_label, testing_set, testing_label):
         epochs=EPOCHS,
         validation_data=(testing_set, testing_label),
         verbose=1,
-        callbacks=[tensorboard_callback]
+        callbacks=[tensorboard_callback, cp_callback, es]
     )
 
     return history
@@ -243,5 +249,7 @@ for text, pred in zip(pred_sentences, res):
     else:
         print('Prediction is lower than threshold!!')
 
-print('save model: -------------------------------------------->>>>>')
+print('Save model: -------------------------------------------->>>>>')
 model.save_weights(weights_path)
+print('Model saved -------------------------------------------->>>>>')
+
