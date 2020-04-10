@@ -87,14 +87,15 @@ pred_sentences = [
 ]
 
 
-def get_predictions():
+def get_predictions(data=None):
     print('tokenize text')
-    pred_token_ids = convert_text_into_tokens(tokenizer, pred_sentences)
+    test_data = data if not None else pred_sentences
+    pred_token_ids = convert_text_into_tokens(tokenizer, test_data)
     print('model predict')
     res = model.predict(pred_token_ids)
 
     print('PREDICTED RESULT:')
-    for text, pred in zip(pred_sentences, res):
+    for text, pred in zip(test_data, res):
         print(" Text:", text)
         print(" Res:", pred)
 
@@ -104,6 +105,9 @@ def get_predictions():
         # filter trough threshold
         if threshold < score:
             pred_class = classes[max_score_index]
-            print('Predicted class:', pred_class)
+            print('**********************************')
+            print('PREDICTED CLASS:', pred_class)
+            print('**********************************')
+
         else:
-            print('Prediction is lower than threshold!!')
+            print('Prediction is lower than threshold!! -------------------->>>>>>>>')
