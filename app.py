@@ -23,14 +23,13 @@ print(f'Tf version is: {tf.__version__}')
 current_dir = os.path.dirname(os.path.realpath(__file__))
 models_folder = os.path.join(current_dir, "models", "multi_cased_L-12_H-768_A-12")
 weights_path = os.path.join(current_dir, "weights", 'bert_model_weights.h5')
-EPOCHS = 200
+EPOCHS = 2
 data_dir = 'data'
 max_seq_length = 47
 classes = ['MANAGEMENT', 'PAYBENEFITS', 'WORKPLACE']
 
 classes_number = len(classes)
 checkpoint_name = os.path.join(models_folder,'checkpoints', "bert_faq.ckpt")
-threshold = 0.5
 
 
 
@@ -176,7 +175,7 @@ def fitModel(training_set, training_label, testing_set, testing_label):
     log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir, histogram_freq=1)
 
-    es = tf.keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=30)
+    # es = tf.keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=30)
 
     history = model.fit(
         training_set,
@@ -184,7 +183,7 @@ def fitModel(training_set, training_label, testing_set, testing_label):
         epochs=EPOCHS,
         validation_data=(testing_set, testing_label),
         verbose=1,
-        callbacks=[tensorboard_callback, cp_callback, es]
+        callbacks=[tensorboard_callback]
     )
 
     return history
@@ -224,30 +223,30 @@ plt.legend()
 
 plt.show()
 
-# model predict
-
-pred_sentences = [
-    "Beste Arbeitsumgebung",
-    "hoffe, das Management wird das Anreizsystem nicht weiter ändern",
-    "netter Chef"
-]
-# 3 class, 2 class 1class
-pred_token_ids = convert_text_into_tokens(tokenizer, pred_sentences)
-res = model.predict(pred_token_ids)
-
-for text, pred in zip(pred_sentences, res):
-    print(" Text:", text)
-    print(" Res:", pred)
-
-    max_score_index = np.argmax(pred)
-    score = pred[max_score_index]
-
-    # filter trough threshold
-    if threshold < score:
-        pred_class = classes[max_score_index]
-        print('Predicted class:', pred_class)
-    else:
-        print('Prediction is lower than threshold!!')
+# # model predict
+#
+# pred_sentences = [
+#     "Beste Arbeitsumgebung",
+#     "hoffe, das Management wird das Anreizsystem nicht weiter ändern",
+#     "netter Chef"
+# ]
+# # 3 class, 2 class 1class
+# pred_token_ids = convert_text_into_tokens(tokenizer, pred_sentences)
+# res = model.predict(pred_token_ids)
+#
+# for text, pred in zip(pred_sentences, res):
+#     print(" Text:", text)
+#     print(" Res:", pred)
+#
+#     max_score_index = np.argmax(pred)
+#     score = pred[max_score_index]
+#
+#     # filter trough threshold
+#     if threshold < score:
+#         pred_class = classes[max_score_index]
+#         print('Predicted class:', pred_class)
+#     else:
+#         print('Prediction is lower than threshold!!')
 
 print('Save model: -------------------------------------------->>>>>')
 model.save_weights(weights_path)
