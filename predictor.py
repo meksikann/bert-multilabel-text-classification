@@ -96,18 +96,18 @@ def get_predictions(data=None):
 
     print('PREDICTED RESULT:')
     for text, pred in zip(test_data, res):
-        print(" Text:", text)
-        print(" Res:", pred)
+        print("Text:", text)
+        print("Prediction result:", pred)
+        pred_classes = []
 
-        max_score_index = np.argmax(pred)
-        score = pred[max_score_index]
+        for i in range(len(pred)):
+            score = pred[i]
+            if threshold < score:
+                pred_classes.append(classes[i])
 
-        # filter trough threshold
-        if threshold < score:
-            pred_class = classes[max_score_index]
+        if len(pred_classes):
+
+            print('PREDICTED CLASSES:', pred_classes)
             print('**********************************')
-            print('PREDICTED CLASS:', pred_class)
-            print('**********************************')
-
         else:
             print('Prediction is lower than threshold!! -------------------->>>>>>>>')

@@ -23,7 +23,7 @@ print(f'Tf version is: {tf.__version__}')
 current_dir = os.path.dirname(os.path.realpath(__file__))
 models_folder = os.path.join(current_dir, "models", "multi_cased_L-12_H-768_A-12")
 weights_path = os.path.join(current_dir, "weights", 'bert_model_weights.h5')
-EPOCHS = 2
+EPOCHS = 200
 data_dir = 'data'
 max_seq_length = 47
 classes = ['MANAGEMENT', 'PAYBENEFITS', 'WORKPLACE']
@@ -150,12 +150,12 @@ def createModel():
         tf.keras.layers.Dropout(0.5),
         tf.keras.layers.Dense(256, activation=tf.nn.relu),
         tf.keras.layers.Dropout(0.5),
-        tf.keras.layers.Dense(classes_number, activation=tf.nn.softmax)
+        tf.keras.layers.Dense(classes_number, activation=tf.nn.sigmoid)
     ])
 
     model.build(input_shape=(None, max_seq_length))
 
-    model.compile(loss='categorical_crossentropy', optimizer=tf.optimizers.Adam(lr=0.00001), metrics=['accuracy'])
+    model.compile(loss='binary_crossentropy', optimizer=tf.optimizers.Adam(lr=0.00001), metrics=['accuracy'])
 
     print(model.summary())
 
@@ -223,30 +223,6 @@ plt.legend()
 
 plt.show()
 
-# # model predict
-#
-# pred_sentences = [
-#     "Beste Arbeitsumgebung",
-#     "hoffe, das Management wird das Anreizsystem nicht weiter ändern",
-#     "netter Chef"
-# ]
-# # 3 class, 2 class 1class
-# pred_token_ids = convert_text_into_tokens(tokenizer, pred_sentences)
-# res = model.predict(pred_token_ids)
-#
-# for text, pred in zip(pred_sentences, res):
-#     print(" Text:", text)
-#     print(" Res:", pred)
-#
-#     max_score_index = np.argmax(pred)
-#     score = pred[max_score_index]
-#
-#     # filter trough threshold
-#     if threshold < score:
-#         pred_class = classes[max_score_index]
-#         print('Predicted class:', pred_class)
-#     else:
-#         print('Prediction is lower than threshold!!')
 
 print('Save model: -------------------------------------------->>>>>')
 model.save_weights(weights_path)
